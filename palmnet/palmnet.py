@@ -1,5 +1,6 @@
 import keras
-from keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+import tensorflow as tf
+from keras.layers import Conv2D, Dense, Flatten, Lambda, MaxPooling2D
 
 from palmnet.dataset import load_train_test_dataset
 from palmnet.layers import ArcLayer, GaborConv2D
@@ -19,6 +20,7 @@ def train(dataset_names=None, epochs=64, batch_size=32):
             Conv2D(6, 3, activation="relu"),
             Flatten(),
             Dense(num_classes),
+            Lambda(lambda x: tf.nn.l2_normalize(x, axis=1)),
             ArcLayer(num_classes),
         ],
     )
