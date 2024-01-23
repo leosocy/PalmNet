@@ -26,21 +26,4 @@ def download_dataset(dataset: SupportedDatasetName):
 
     buffer.seek(0)
     file = tarfile.open(fileobj=buffer, mode="r|gz")
-    file.extractall(path=f"./{dataset.value}")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dataset",
-        default="all",
-        help="download which datasets, default is all",
-    )
-    args = parser.parse_args()
-
-    dataset = args.dataset
-    if dataset == "all":
-        for dataset in SupportedDatasetName:
-            download_dataset(dataset)
-    else:
-        download_dataset(SupportedDatasetName.from_str(dataset))
+    file.extractall(path=f"./datasets/{dataset.value}")

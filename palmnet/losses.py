@@ -1,7 +1,6 @@
 from math import pi
 
 import keras
-import numpy as np
 import tensorflow as tf
 
 
