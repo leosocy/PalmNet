@@ -28,5 +28,5 @@ force_grid_wrap = 0
 combine_as_imports = true
 known_future_library = [""]
 known_standard_library = ""
-known_third_party = ["cv2", "keras", "numpy", "requests", "sklearn", "tensorflow", "tqdm"]
+known_third_party = ["cv2", "keras", "matplotlib", "numpy", "requests", "sklearn", "tensorflow", "tqdm"]
 known_first_party = ""
