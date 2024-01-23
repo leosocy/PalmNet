@@ -1,5 +1,4 @@
 import argparse
-import enum
 import io
 import logging
 import os
@@ -8,22 +7,10 @@ import tarfile
 import requests
 import tqdm
 
-
-@enum.unique
-class SupportedDataset(enum.Enum):
-    POLYU = "PolyU"
-    TONGJI = "Tongji"
-
-    @classmethod
-    def from_str(cls, s):
-        return cls[s.upper()]
-
-    @property
-    def oss_url(self):
-        return f"https://blog-images-1257621236.cos.ap-shanghai.myqcloud.com/PalmNet/{self.value}.tar.gz"
+from palmnet.dataset import SupportedDatasetName
 
 
-def download_dataset(dataset: SupportedDataset):
+def download_dataset(dataset: SupportedDatasetName):
     if os.path.exists(f"./{dataset.value}"):
         logging.warning(f"dataset {dataset.value} already exists, skip download")
         return
@@ -53,7 +40,7 @@ if __name__ == "__main__":
 
     dataset = args.dataset
     if dataset == "all":
-        for dataset in SupportedDataset:
+        for dataset in SupportedDatasetName:
             download_dataset(dataset)
     else:
-        download_dataset(SupportedDataset.from_str(dataset))
+        download_dataset(SupportedDatasetName.from_str(dataset))

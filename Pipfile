@@ -7,6 +7,8 @@ name = "pip_conf_index_global"
 tensorflow = "*"
 opencv-python = "*"
 tqdm = "*"
+scikit-learn = "*"
+matplotlib = "*"
 
 [dev-packages]
 
