@@ -3,7 +3,7 @@
 For full datasets, run the following command
 
 ```shell
-python download.py
+python main.py --download
 ```
 
 ## PolyU Palmprint Database
@@ -25,3 +25,4 @@ Contains images of palms from 300 individuals (192 men and 108 women), of whom 2
 The whole collection process is divided into two times. The average time interval between the first and second time is about 61 days. The maximum and the shortest time intervals are 106 days and 21 days respectively. Each time, 20 pictures of two palms are collected.
 
 Therefore, each subject collected 40 images from 2 palms, which contained a total of 12,000 image samples.
+q

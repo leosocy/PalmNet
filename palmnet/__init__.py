@@ -1,3 +1,2 @@
-from .dataset import SupportedDatasetName
-from .download import download_dataset
+from .dataset import DatasetRegistry, SupportedDatasetName
 from .palmnet import predict, train

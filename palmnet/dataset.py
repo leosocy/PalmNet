@@ -3,12 +3,13 @@ import enum
 import os.path
 import re
 from functools import cached_property
-from typing import List
+from typing import Dict, List, Type
 
 import cv2 as cv
 import keras
 import numpy as np
 import tensorflow as tf
+from keras.src.utils.data_utils import get_file
 from keras.utils import to_categorical
 from sklearn.model_selection import StratifiedShuffleSplit
 
@@ -17,6 +18,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 class SupportedDatasetName(enum.Enum):
     POLYU = "PolyU"
     TONGJI = "Tongji"
+    TSINGHUA = "Tsinghua"
 
     @classmethod
     def from_str(cls, s):
@@ -46,10 +48,45 @@ class Palmprint:
         img = cv.imread(self._image_path, cv.IMREAD_GRAYSCALE)
         return cv.resize(img, self._image_size)
 
+    def __str__(self):
+        return self._label
+
+
+class DatasetRegistry:
+    _DATASETS: Dict[SupportedDatasetName, Type["Dataset"]] = {}
+
+    @classmethod
+    def register(cls, name: SupportedDatasetName):
+        def wrapper(klass):
+            cls._DATASETS[name] = klass
+            return klass
+
+        return wrapper
+
+    @classmethod
+    def get_dataset(cls, name: SupportedDatasetName, *args, **kwargs) -> "Dataset":
+        if name not in cls._DATASETS:
+            raise ValueError(f"Unsupported dataset name {name}")
+        return cls._DATASETS[name](name, *args, **kwargs)
+
 
 class Dataset:
     _COS_BASE_PATH = "https://blog-images-1257621236.cos.ap-shanghai.myqcloud.com/PalmNet"
     _IMAGE_NAME_REGEX = re.compile(r".*\.(png|jpg|bmp)")
+
+    def __init__(self, name: SupportedDatasetName, cache_dir="~/.palmnet", cache_subdir="datasets", data_dir=None):
+        self._name = name
+        self._cache_dir = os.path.expanduser(cache_dir)
+        self._cache_subdir = cache_subdir
+        self._data_dir = os.path.expanduser(data_dir or os.path.join(cache_dir, cache_subdir, name.value))
+
+    def download(self) -> str:
+        return get_file(
+            origin=self.download_url(),
+            cache_dir=self._cache_dir,
+            cache_subdir=self._cache_subdir,
+            extract=True,
+        )
 
     @abc.abstractmethod
     def download_url(self) -> str:
@@ -72,17 +109,15 @@ class Dataset:
         return re.match(Dataset._IMAGE_NAME_REGEX, name) is not None
 
 
+@DatasetRegistry.register(SupportedDatasetName.POLYU)
 class PolyUDataset(Dataset):
-    def __init__(self, base_dir: str):
-        self._base_dir = base_dir
-
     def download_url(self) -> str:
         return f"{self._COS_BASE_PATH}/PolyU.tar.gz"
 
     def load_palmprints(self) -> List[Palmprint]:
         palmprints = []
-        for spectral_name in self.listdir(self._base_dir):
-            spectral_dir = os.path.join(self._base_dir, spectral_name)
+        for spectral_name in self.listdir(self._data_dir):
+            spectral_dir = os.path.join(self._data_dir, spectral_name)
             for identity_name in self.listdir(spectral_dir):
                 identity_dir = os.path.join(spectral_dir, identity_name)
                 identity = identity_name
@@ -93,17 +128,15 @@ class PolyUDataset(Dataset):
         return palmprints
 
 
+@DatasetRegistry.register(SupportedDatasetName.TONGJI)
 class TongjiDataset(Dataset):
-    def __init__(self, base_dir: str):
-        self._base_dir = base_dir
-
     def download_url(self) -> str:
         return f"{self._COS_BASE_PATH}/Tongji.tar.gz"
 
     def load_palmprints(self) -> List[Palmprint]:
         palmprints = []
-        for session_name in self.listdir(self._base_dir):
-            session_dir = os.path.join(self._base_dir, session_name)
+        for session_name in self.listdir(self._data_dir):
+            session_dir = os.path.join(self._data_dir, session_name)
             for image_name in self.listfile(session_dir):
                 if not self.is_image(image_name):
                     continue
@@ -112,18 +145,27 @@ class TongjiDataset(Dataset):
         return palmprints
 
 
+@DatasetRegistry.register(SupportedDatasetName.TSINGHUA)
+class TsinghuaDataset(Dataset):
+    def download_url(self) -> str:
+        return f"{self._COS_BASE_PATH}/Tsinghua.tar.gz"
+
+    def load_palmprints(self) -> List[Palmprint]:
+        palmprints = []
+        for image_name in self.listfile(self._data_dir):
+            if not self.is_image(image_name):
+                continue
+            identity = image_name[:-6]
+            palmprints.append(Palmprint(f"Tsinghua-{identity}", os.path.join(self._data_dir, image_name)))
+        return palmprints
+
+
 def load_palmprints(dataset_names: List[SupportedDatasetName] = None) -> List[Palmprint]:
     dataset_names = dataset_names or list(SupportedDatasetName)
     palmprints = []
     for dataset_name in dataset_names:
-        if dataset_name == SupportedDatasetName.POLYU:
-            dataset = PolyUDataset("./datasets/PolyU")
-            palmprints.extend(dataset.load_palmprints())
-        elif dataset_name == SupportedDatasetName.TONGJI:
-            dataset = TongjiDataset("./datasets/Tongji")
-            palmprints.extend(dataset.load_palmprints())
-        else:
-            raise ValueError(f"Unsupported dataset name {dataset_name}")
+        dataset = DatasetRegistry.get_dataset(dataset_name)
+        palmprints.extend(dataset.load_palmprints())
     return palmprints
 
 

@@ -20,9 +20,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.download:
-        datasets = args.datasets or list(palmnet.SupportedDatasetName)
-        for dataset in datasets:
-            palmnet.download_dataset(dataset)
+        for dataset_name in args.datasets or list(palmnet.SupportedDatasetName):
+            palmnet.DatasetRegistry.get_dataset(dataset_name).download()
     elif args.predict:
         palmnet.predict(dataset_names=args.datasets)
     else:
